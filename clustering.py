@@ -20,10 +20,8 @@ from config import *
 class ClusterAnalyzer:
     def __init__(self):
         self.scaler = StandardScaler()
-        # 设备配置 - 支持Apple Silicon Mac的MPS
-        if torch.backends.mps.is_available():
-            self.device = torch.device("mps")
-        elif torch.cuda.is_available():
+        # 设备配置
+        if torch.cuda.is_available():
             self.device = torch.device("cuda")
         else:
             self.device = torch.device("cpu")

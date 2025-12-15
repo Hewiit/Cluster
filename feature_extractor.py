@@ -55,8 +55,6 @@ class FeatureExtractor:
         # 清理GPU内存
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-        elif torch.backends.mps.is_available():
-            torch.mps.empty_cache()
         
         # 模型配置
         self.local_model_dir = "./models"
@@ -284,8 +282,6 @@ class FeatureExtractor:
         """提取所有特征，支持多图融合和模态缺失处理"""
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-        elif torch.backends.mps.is_available():
-            torch.mps.empty_cache()
         
         image_features = []
         text_features = []
@@ -370,8 +366,6 @@ class FeatureExtractor:
             if len(image_features) % 100 == 0:
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
-                elif torch.backends.mps.is_available():
-                    torch.mps.empty_cache()
 
         if not image_features:
             raise ValueError("没有成功处理任何样本，请检查数据和错误信息")

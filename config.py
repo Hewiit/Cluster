@@ -3,12 +3,8 @@ import torch
 
 # 设备配置
 def get_device():
-    # 检查是否有MPS（Metal Performance Shaders）支持 - 适用于Apple Silicon Mac
-    if torch.backends.mps.is_available():
-        print("发现Apple Silicon GPU (MPS)，将使用MPS加速")
-        return "mps"
     # 检查CUDA支持（适用于NVIDIA GPU）
-    elif torch.cuda.is_available():
+    if torch.cuda.is_available():
         # 获取可用的GPU数量
         gpu_count = torch.cuda.device_count()
         print(f"发现 {gpu_count} 个可用的CUDA GPU设备")

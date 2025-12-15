@@ -8,9 +8,7 @@ class TensorSVD:
     """t-SVD张量分解模块"""
     
     def __init__(self):
-        if torch.backends.mps.is_available():
-            self.device = torch.device("mps")
-        elif torch.cuda.is_available():
+        if torch.cuda.is_available():
             self.device = torch.device("cuda")
         else:
             self.device = torch.device("cpu")

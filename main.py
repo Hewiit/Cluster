@@ -33,8 +33,6 @@ def cleanup_memory():
     if torch.cuda.is_available():
         torch.cuda.empty_cache()  # 清空CUDA缓存
         torch.cuda.synchronize()  # 同步CUDA操作
-    elif torch.backends.mps.is_available():
-        torch.mps.empty_cache()
     # 清理Python垃圾回收
     gc.collect()
     print("显存清理完成")
@@ -368,7 +366,7 @@ def print_results(clusters, metrics, labels):
         print_cluster_stats(clusters)
 
 def forward(data_source_path=None, use_saved=False, method='traditional', min_posts=1, source_site=None, 
-            use_prior=True, max_samples_per_event=1200, min_samples_per_event=1):
+            use_prior=True, max_samples_per_event=1000, min_samples_per_event=1):
     """
     总的forward函数，执行完整的聚类流程
     
@@ -440,7 +438,7 @@ def main():
     # 直接指定参数
     data_source_path = '/mllms/houwenzheng/LLaMA-Factory/Multicluster/event_wh_新浪微博_20250723_20250729'  # 源数据路径（可选，如果为None则使用config中的WEIBO_BASE_DIR）
     use_saved =  False       # 是否使用已保存的特征
-    method = 'traditional'        # 聚类方法: 'traditional' 或 'tensor'
+    method = 'traditional'  
     min_posts = 1          # 最小帖子数量（用于数据过滤）
     source_site = "新浪微博"      # ALL_PLATFORM数据的来源网站过滤条件
 
