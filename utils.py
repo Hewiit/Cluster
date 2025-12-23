@@ -8,6 +8,7 @@ from collections import defaultdict
 import glob
 from sklearn.metrics import normalized_mutual_info_score, adjusted_rand_score
 import random
+import shutil
 
 def save_clustering_result(clusters, features, ner_features, sample_tags, run_id):
     """保存聚类结果"""
@@ -195,7 +196,7 @@ def load_multiview_features():
     print("已成功加载多视角特征")
     return multiview_features, true_labels
 
-def save_clusters_as_events(clusters, all_data, output_dir, text_indices=None):
+def save_clusters_as_events(clusters, all_data, output_dir, text_indices=None, ner_features=None):
     """
     将聚类结果以事件形式保存，每个簇作为一个事件，并生成对应的目录结构和CSV文件
     
@@ -215,7 +216,7 @@ def save_clusters_as_events(clusters, all_data, output_dir, text_indices=None):
     clustered_data = defaultdict(list)
     
     if text_indices is not None:
-        # 使用提供的索引映射
+        # 使用提供的索引映射：聚类结果索引 -> 原始DataFrame索引
         for i, cluster_id in enumerate(clusters):
             if i < len(text_indices):
                 orig_idx = text_indices[i]
@@ -350,6 +351,41 @@ def save_clusters_as_events(clusters, all_data, output_dir, text_indices=None):
                 
                 # 输出簇信息
                 print(f"簇 {cluster_id} -> {safe_event_name}，包含 {len(cluster_data)} 条微博")
+
+            # 复制该簇对应的图片到事件目录下的images子目录（结构参考原始结果文件）
+            if ner_features is not None:
+                images_output_dir = os.path.join(cluster_dir, WEIBO_IMAGE_DIRNAME)
+                if not os.path.exists(images_output_dir):
+                    os.makedirs(images_output_dir)
+
+                copied_images = 0
+                # indices 是原始 DataFrame 中的行索引，假设与 ner_features 的顺序对齐
+                if isinstance(ner_features, list):
+                    for orig_idx in indices:
+                        if orig_idx >= len(ner_features):
+                            continue
+                        info = ner_features[orig_idx]
+                        if not isinstance(info, dict):
+                            continue
+                        image_paths = info.get("image_paths", [])
+                        if not image_paths:
+                            continue
+                        for src_path in image_paths:
+                            if not src_path:
+                                continue
+                            try:
+                                if not os.path.exists(src_path):
+                                    continue
+                                dst_path = os.path.join(images_output_dir, os.path.basename(src_path))
+                                # 避免重复拷贝同名文件
+                                if not os.path.exists(dst_path):
+                                    shutil.copy2(src_path, dst_path)
+                                    copied_images += 1
+                            except Exception as img_err:
+                                print(f"复制图片 {src_path} 时出错: {str(img_err)}")
+
+                if copied_images > 0:
+                    print(f"簇 {cluster_id} ({safe_event_name}) 关联图片已复制 {copied_images} 张到 {images_output_dir}")
             
             # 如果有原事件统计，也输出一下
             if orig_events_count is not None and len(orig_events_count) > 0:
@@ -473,6 +509,10 @@ def export_clusters_to_events(clusters, ner_features, output_dir, base_dir, targ
         min_len = min(len(clusters), len(all_df))
         clusters = clusters[:min_len]
         all_df = all_df.iloc[:min_len].copy()
+        # 保持 ner_features 与聚类结果、原始数据长度一致
+        if ner_features and isinstance(ner_features, list):
+            if len(ner_features) >= min_len:
+                ner_features = ner_features[:min_len]
     
     # 如果ner_features中有原始ID信息，构建索引映射
     text_to_data_mapping = []
@@ -490,8 +530,8 @@ def export_clusters_to_events(clusters, ner_features, output_dir, base_dir, targ
         indices_mapping = text_to_data_mapping
         print(f"成功构建特征到原始数据的索引映射，共 {len(indices_mapping)} 条")
     
-    # 导出聚类结果为事件数据
-    result = save_clusters_as_events(clusters, all_df, output_dir, indices_mapping)
+    # 导出聚类结果为事件数据（同时利用 ner_features 中的图片路径）
+    result = save_clusters_as_events(clusters, all_df, output_dir, indices_mapping, ner_features)
     return result is not None
 
 def compute_prior_distribution(labels):
